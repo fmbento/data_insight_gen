@@ -1,0 +1,5 @@
+{
+  "name": "Data Insight Generator",
+  "description": "An AI-powered application to analyze and visualize your data. Upload your dataset to receive a comprehensive report with key metrics, content analysis, and interactive charts.",
+  "requestFramePermissions": []
+}
