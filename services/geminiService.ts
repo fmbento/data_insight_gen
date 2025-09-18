@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import type { PreliminaryAnalysis, AnalysisReport } from '../types';
 
@@ -8,15 +7,25 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const SAMPLE_SIZE = 100;
+export const SAMPLE_SIZE = 100;
 
-function getSampleData(data: string): string {
+export function getSampleData(data: string): string {
   const lines = data.trim().split('\n');
-  if (lines.length <= SAMPLE_SIZE + 1) {
+  if (lines.length <= SAMPLE_SIZE + 1) { // +1 for the header
     return data;
   }
+  
   const header = lines[0];
-  const sampleLines = lines.slice(1, SAMPLE_SIZE + 1);
+  const dataRows = lines.slice(1);
+
+  // Fisher-Yates (aka Knuth) Shuffle for a random sample
+  for (let i = dataRows.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [dataRows[i], dataRows[j]] = [dataRows[j], dataRows[i]];
+  }
+
+  const sampleLines = dataRows.slice(0, SAMPLE_SIZE);
+  
   return [header, ...sampleLines].join('\n');
 }
 
@@ -156,11 +165,19 @@ const reportSchema = {
 
 export async function generateReport(data: string, useSample: boolean): Promise<AnalysisReport> {
     const dataToAnalyze = useSample ? getSampleData(data) : data;
-    const analysisScope = useSample ? `a representative sample of ${SAMPLE_SIZE} records` : 'the full dataset';
+    
+    // Calculate the exact number of data rows being analyzed.
+    // We filter out potential empty lines and subtract 1 for the header.
+    const recordCount = dataToAnalyze.trim().split('\n').filter(line => line.trim() !== '').length - 1;
+
+    const analysisScope = useSample 
+      ? `a representative random sample of ${recordCount} records` 
+      : `the full dataset, which contains ${recordCount} records`;
     
     const prompt = `
-    Act as a professional data analyst. Analyze the following data from ${analysisScope} and generate a comprehensive report.
+    Act as a professional data analyst. Analyze the following data which consists of ${analysisScope} and generate a comprehensive report.
     The report must be a single JSON object conforming to the provided schema.
+    It is crucial that any mention of the number of records in your analysis (e.g., in the summary or metrics) correctly refers to the total of ${recordCount} records provided.
     
     **Analysis Tasks:**
     1.  **Summarize:** Provide a concise, insightful summary of the data.

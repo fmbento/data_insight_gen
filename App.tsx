@@ -1,10 +1,9 @@
-
 import React, { useState, useCallback } from 'react';
 import FileUpload from './components/FileUpload';
 import AnalysisOptions from './components/AnalysisOptions';
 import ReportDisplay from './components/ReportDisplay';
 import Loader from './components/Loader';
-import { getPreliminaryAnalysis, generateReport } from './services/geminiService';
+import { getPreliminaryAnalysis, generateReport, getSampleData } from './services/geminiService';
 import type { PreliminaryAnalysis, AnalysisReport } from './types';
 import { AppStep } from './types';
 
@@ -14,6 +13,7 @@ const App: React.FC = () => {
   const [preliminaryAnalysis, setPreliminaryAnalysis] = useState<PreliminaryAnalysis | null>(null);
   const [analysisReport, setAnalysisReport] = useState<AnalysisReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [wasSampleAnalyzed, setWasSampleAnalyzed] = useState(false);
 
   const handleDataSubmit = useCallback(async (data: string) => {
     setRawData(data);
@@ -45,6 +45,7 @@ const App: React.FC = () => {
 
 
     setStep(AppStep.Loading);
+    setWasSampleAnalyzed(useSample);
     try {
       const report = await generateReport(rawData, useSample);
       setAnalysisReport(report);
@@ -62,7 +63,23 @@ const App: React.FC = () => {
     setPreliminaryAnalysis(null);
     setAnalysisReport(null);
     setError(null);
+    setWasSampleAnalyzed(false);
   };
+
+  const handleDownloadSample = useCallback(() => {
+    if (!rawData) return;
+    const sampleData = getSampleData(rawData);
+    const blob = new Blob([sampleData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.setAttribute('download', 'sample_data.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [rawData]);
+
 
   const renderContent = () => {
     switch (step) {
@@ -80,7 +97,12 @@ const App: React.FC = () => {
         return <Loader />;
       case AppStep.Report:
         return analysisReport ? (
-          <ReportDisplay report={analysisReport} onReset={handleReset} />
+          <ReportDisplay
+            report={analysisReport}
+            onReset={handleReset}
+            wasSampleAnalyzed={wasSampleAnalyzed}
+            onDownloadSample={handleDownloadSample}
+          />
         ) : null;
       default:
         return <FileUpload onSubmit={handleDataSubmit} error={error} />;
