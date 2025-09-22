@@ -30,7 +30,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleAnalysisStart = useCallback(async (useSample: boolean) => {
+  const handleAnalysisStart = useCallback(async (useSample: boolean, customInstructions: string, detectOutliers: boolean) => {
     setError(null);
 
     // A safe character limit to stay well under the typical 1M token limit for prompts.
@@ -47,7 +47,7 @@ const App: React.FC = () => {
     setStep(AppStep.Loading);
     setWasSampleAnalyzed(useSample);
     try {
-      const report = await generateReport(rawData, useSample);
+      const report = await generateReport(rawData, useSample, customInstructions, detectOutliers);
       setAnalysisReport(report);
       setStep(AppStep.Report);
     } catch (e) {

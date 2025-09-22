@@ -41,15 +41,26 @@ export interface ContentAnalysis {
     }[];
 }
 
-export interface VisualElement {
-  type: 'image' | 'animated_graphic';
-  description: string;
-  visualization_of: string;
-}
-
 export interface InteractiveElement {
   description: string;
   functionality: string;
+}
+
+export interface CustomSection {
+  title: string;
+  content: string; // AI can format this with Markdown
+}
+
+export interface OutlierRecord {
+  recordId: string | number;
+  field: string;
+  value: string;
+  reason: string;
+}
+
+export interface OutlierAnalysis {
+  summary: string;
+  outliers: OutlierRecord[];
 }
 
 export interface AnalysisReport {
@@ -58,6 +69,7 @@ export interface AnalysisReport {
   keyMetrics: Metric[];
   charts: Chart[];
   contentAnalysis: ContentAnalysis;
-  visualElements: VisualElement[];
   interactiveElements: InteractiveElement[];
+  customSections?: CustomSection[];
+  outlierAnalysis?: OutlierAnalysis;
 }

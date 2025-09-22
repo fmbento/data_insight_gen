@@ -135,18 +135,6 @@ const reportSchema = {
             },
             required: ['sentiment', 'themes'],
         },
-        visualElements: {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    type: { type: Type.STRING, enum: ['image', 'animated_graphic'] },
-                    description: { type: Type.STRING },
-                    visualization_of: { type: Type.STRING },
-                },
-                required: ['type', 'description', 'visualization_of'],
-            },
-        },
         interactiveElements: {
             type: Type.ARRAY,
             items: {
@@ -158,45 +146,108 @@ const reportSchema = {
                 required: ['description', 'functionality'],
             },
         },
+        customSections: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    title: { type: Type.STRING, description: "Title for the custom analysis section." },
+                    content: { type: Type.STRING, description: "Content for the custom section, formatted as Markdown." },
+                },
+                required: ['title', 'content'],
+            },
+        },
+        outlierAnalysis: {
+            type: Type.OBJECT,
+            properties: {
+                summary: { type: Type.STRING },
+                outliers: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            recordId: { type: Type.STRING },
+                            field: { type: Type.STRING },
+                            value: { type: Type.STRING },
+                            reason: { type: Type.STRING },
+                        },
+                        required: ['recordId', 'field', 'value', 'reason'],
+                    },
+                },
+            },
+            required: ['summary', 'outliers'],
+        },
     },
-    required: ['title', 'summary', 'keyMetrics', 'charts', 'contentAnalysis', 'visualElements', 'interactiveElements'],
+    required: ['title', 'summary', 'keyMetrics', 'charts', 'contentAnalysis', 'interactiveElements'],
 };
 
 
-export async function generateReport(data: string, useSample: boolean): Promise<AnalysisReport> {
+export async function generateReport(data: string, useSample: boolean, customInstructions: string, detectOutliers: boolean): Promise<AnalysisReport> {
     const dataToAnalyze = useSample ? getSampleData(data) : data;
     
-    // Calculate the exact number of data rows being analyzed.
-    // We filter out potential empty lines and subtract 1 for the header.
     const recordCount = dataToAnalyze.trim().split('\n').filter(line => line.trim() !== '').length - 1;
 
     const analysisScope = useSample 
       ? `a representative random sample of ${recordCount} records` 
       : `the full dataset, which contains ${recordCount} records`;
+
+    const customInstructionsSection = (customInstructions && customInstructions.trim() !== '') 
+        ? `
+**User-Provided Instructions (High Priority):**
+The user has provided the following instructions that you MUST address: "${customInstructions.trim()}"
+
+**How to Handle Custom Instructions:**
+- If the instruction asks for a specific analysis that doesn't fit into the standard report sections, you MUST generate a new section for it in the 'customSections' array.
+- For each distinct request, create a separate object in the 'customSections' array with a clear 'title' and Markdown-formatted 'content'.
+- If the instructions are clarifications, apply this focus to the relevant existing sections AND add a custom section confirming you followed the instruction.
+`
+        : '';
+
+    const outlierAnalysisSection = (detectOutliers && !useSample)
+        ? `
+**Outlier and Anomaly Detection (High Priority):**
+You MUST perform an outlier analysis on the full dataset, which contains exactly ${recordCount} records. This is a critical task.
+- For each column, determine a likely data type and expected range or pattern for its values. For geographic coordinates, check if they fall within standard lat/long ranges (-90 to +90 for latitude, -180 to +180 for longitude).
+- Identify any values that deviate significantly from the norm.
+- Populate the 'outlierAnalysis' section of your JSON response with your findings.
+- The 'summary' MUST begin by stating that the analysis was performed on the full dataset of ${recordCount} records. For example: "The outlier analysis of all ${recordCount} records revealed...".
+- For each outlier found, provide a detailed entry in the 'outliers' array. Use a primary key from the data (e.g., 'id') for 'recordId' if available; otherwise, use the 1-based row number.
+- If NO outliers are found after a thorough check, you MUST state this clearly in the summary (e.g., "A thorough analysis of all ${recordCount} records found no significant outliers.") and return an empty 'outliers' array.
+`
+        : '';
     
+    const systemInstruction = `You are a professional data analyst. Your task is to analyze the provided data and generate a comprehensive report. The report must be a single, complete JSON object that strictly conforms to the provided schema. Do not include any text or formatting before or after the JSON object.`;
+
     const prompt = `
-    Act as a professional data analyst. Analyze the following data which consists of ${analysisScope} and generate a comprehensive report.
-    The report must be a single JSON object conforming to the provided schema.
-    It is crucial that any mention of the number of records in your analysis (e.g., in the summary or metrics) correctly refers to the total of ${recordCount} records provided.
+Please analyze the data provided below and generate the report.
+
+${customInstructionsSection}
+${outlierAnalysisSection}
     
-    **Analysis Tasks:**
-    1.  **Summarize:** Provide a concise, insightful summary of the data.
-    2.  **Key Metrics:** Identify and calculate at least 3-5 key metrics (e.g., averages, totals, counts, percentages). For each, provide a label, value, and brief description.
-    3.  **Charts:** Generate data for 2-3 charts (bar or pie) to visualize key distributions or comparisons. Ensure chart data is suitable for plotting.
-    4.  **Content Analysis:** If text fields (like feedback or reviews) are present, perform sentiment analysis (positive, neutral, negative) and identify 3-5 recurring themes with examples. If no text fields, state that this analysis is not applicable.
-    5.  **Visuals:** Describe 2 visual elements (one static image, one animated graphic) that could be generated to enhance the report. Explain what data each would visualize.
-    6.  **Interactivity:** Suggest 1-2 interactive elements that could be added to the report, describing their functionality (e.g., tooltips, filters).
+**Analysis Context:**
+- The data you are analyzing is ${analysisScope}.
+- It is a critical requirement that any mention of the number of records in your analysis (in summaries, descriptions, etc.) MUST correctly state the total of ${recordCount} records. Do not miscount or estimate the number of records.
+
+**Analysis Tasks to Perform:**
+1.  **Summarize:** Provide a concise, insightful summary of the data.
+2.  **Key Metrics:** Identify and calculate at least 3-5 key metrics (e.g., averages, totals, counts).
+3.  **Charts:** Generate data for 2-3 charts (bar or pie) to visualize key distributions.
+4.  **Content Analysis:** If text fields are present, perform sentiment analysis and identify recurring themes.
+5.  **Interactivity:** Suggest 1-2 interactive elements that could enhance the report.
+6.  **Outlier Analysis:** If requested, perform the outlier detection as described in the 'Outlier and Anomaly Detection' section.
+7.  **Custom Analysis:** If user instructions were provided, address them by creating sections in the 'customSections' array.
     
-    **Data to Analyze:**
-    \`\`\`
-    ${dataToAnalyze}
-    \`\`\`
-    `;
+**Data to Analyze:**
+\`\`\`
+${dataToAnalyze}
+\`\`\`
+`;
 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
+            systemInstruction: systemInstruction,
             responseMimeType: "application/json",
             responseSchema: reportSchema,
         },
