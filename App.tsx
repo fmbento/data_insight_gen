@@ -4,7 +4,7 @@ import AnalysisOptions from './components/AnalysisOptions';
 import ReportDisplay from './components/ReportDisplay';
 import Loader from './components/Loader';
 import { getPreliminaryAnalysis, generateReport, getSampleData } from './services/geminiService';
-import type { PreliminaryAnalysis, AnalysisReport } from './types';
+import type { PreliminaryAnalysis, AnalysisReport, SavedAnalysis } from './types';
 import { AppStep } from './types';
 
 const App: React.FC = () => {
@@ -50,12 +50,37 @@ const App: React.FC = () => {
       const report = await generateReport(rawData, useSample, customInstructions, detectOutliers);
       setAnalysisReport(report);
       setStep(AppStep.Report);
+
+      // Save the report to localStorage
+      try {
+        const savedAnalysesRaw = localStorage.getItem('savedAnalyses');
+        const savedAnalyses: SavedAnalysis[] = savedAnalysesRaw ? JSON.parse(savedAnalysesRaw) : [];
+        const newSavedAnalysis: SavedAnalysis = {
+          id: Date.now(),
+          savedAt: new Date().toISOString(),
+          report: report,
+          wasSampleAnalyzed: useSample,
+        };
+        // Prepend new analysis and limit to 10 most recent
+        const updatedAnalyses = [newSavedAnalysis, ...savedAnalyses].slice(0, 10);
+        localStorage.setItem('savedAnalyses', JSON.stringify(updatedAnalyses));
+      } catch (saveError) {
+        console.warn("Could not save analysis to local storage:", saveError);
+      }
+
     } catch (e) {
       console.error(e);
       setError('Failed to generate the report. The AI model may be overloaded or the data could not be processed.');
       setStep(AppStep.AnalysisOptions);
     }
   }, [rawData]);
+  
+  const handleLoadAnalysis = useCallback((analysis: SavedAnalysis) => {
+    setAnalysisReport(analysis.report);
+    setWasSampleAnalyzed(analysis.wasSampleAnalyzed);
+    setStep(AppStep.Report);
+    setError(null);
+  }, []);
 
   const handleReset = () => {
     setStep(AppStep.FileUpload);
@@ -84,7 +109,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (step) {
       case AppStep.FileUpload:
-        return <FileUpload onSubmit={handleDataSubmit} error={error} />;
+        return <FileUpload onSubmit={handleDataSubmit} onLoadAnalysis={handleLoadAnalysis} error={error} />;
       case AppStep.AnalysisOptions:
         return preliminaryAnalysis ? (
           <AnalysisOptions
@@ -105,7 +130,7 @@ const App: React.FC = () => {
           />
         ) : null;
       default:
-        return <FileUpload onSubmit={handleDataSubmit} error={error} />;
+        return <FileUpload onSubmit={handleDataSubmit} onLoadAnalysis={handleLoadAnalysis} error={error} />;
     }
   };
 

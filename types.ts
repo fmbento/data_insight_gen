@@ -1,4 +1,3 @@
-
 export enum AppStep {
   FileUpload,
   AnalysisOptions,
@@ -72,4 +71,11 @@ export interface AnalysisReport {
   interactiveElements: InteractiveElement[];
   customSections?: CustomSection[];
   outlierAnalysis?: OutlierAnalysis;
+}
+
+export interface SavedAnalysis {
+  id: number;
+  savedAt: string;
+  report: AnalysisReport;
+  wasSampleAnalyzed: boolean;
 }
