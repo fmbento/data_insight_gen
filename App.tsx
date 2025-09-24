@@ -33,12 +33,11 @@ const App: React.FC = () => {
   const handleAnalysisStart = useCallback(async (useSample: boolean, customInstructions: string, detectOutliers: boolean) => {
     setError(null);
 
-    // A safe character limit to stay well under the typical 1M token limit for prompts.
-    // Let's set a conservative limit like 1.5M characters.
-    const MAX_CHARS_FOR_FULL_ANALYSIS = 1_500_000;
+    // A safe character limit to prevent request bodies from becoming too large.
+    const MAX_CHARS_FOR_FULL_ANALYSIS = 200_000;
 
     if (!useSample && rawData.length > MAX_CHARS_FOR_FULL_ANALYSIS) {
-      setError(`The full dataset is too large to analyze directly (${(rawData.length / 1_000_000).toFixed(1)}M characters). Please choose 'Analyze Sample' or provide a smaller dataset for full analysis.`);
+      setError(`The full dataset is too large to analyze directly (${(rawData.length / 1000).toFixed(0)}k characters, max ${MAX_CHARS_FOR_FULL_ANALYSIS/1000}k). Please use 'Analyze Sample' or a smaller dataset.`);
       // We don't change the step, so the user stays on the options screen with the new error message.
       return;
     }

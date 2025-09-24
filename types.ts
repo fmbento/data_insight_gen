@@ -62,6 +62,32 @@ export interface OutlierAnalysis {
   outliers: OutlierRecord[];
 }
 
+export interface FieldMetric {
+  fieldName: string;
+  description: string;
+  stats: {
+    key: string;
+    value: string;
+  }[];
+}
+
+export interface GeoCoordinates {
+    latitude: number;
+    longitude: number;
+}
+
+export interface GeoAnalysis {
+    summary: string;
+    identifiedLatField: string;
+    identifiedLonField: string;
+    boundingBox: {
+        topLeft: GeoCoordinates;
+        topRight: GeoCoordinates;
+        bottomRight: GeoCoordinates;
+        bottomLeft: GeoCoordinates;
+    };
+}
+
 export interface AnalysisReport {
   title: string;
   summary: string;
@@ -71,6 +97,8 @@ export interface AnalysisReport {
   interactiveElements: InteractiveElement[];
   customSections?: CustomSection[];
   outlierAnalysis?: OutlierAnalysis;
+  fieldMetrics?: FieldMetric[];
+  geoAnalysis?: GeoAnalysis;
 }
 
 export interface SavedAnalysis {

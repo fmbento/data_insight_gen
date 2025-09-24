@@ -6,6 +6,7 @@ import ReportSection from './ReportSection';
 import MetricCard from './MetricCard';
 import BarChartComponent from './BarChartComponent';
 import PieChartComponent from './PieChartComponent';
+import FieldMetricCard from './FieldMetricCard';
 
 interface ReportDisplayProps {
   report: AnalysisReport;
@@ -15,7 +16,7 @@ interface ReportDisplayProps {
 }
 
 const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset, wasSampleAnalyzed, onDownloadSample }) => {
-  const { title, summary, keyMetrics, charts, contentAnalysis, interactiveElements, customSections, outlierAnalysis } = report;
+  const { title, summary, keyMetrics, charts, contentAnalysis, interactiveElements, customSections, outlierAnalysis, fieldMetrics, geoAnalysis } = report;
   const reportRef = useRef<HTMLDivElement>(null);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
 
@@ -83,6 +84,28 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset, wasSampl
         return <p key={index} className="text-red-500">Unknown chart type: {chart.type}</p>;
     }
   };
+  
+  const generateMapUrl = () => {
+    if (!geoAnalysis) return { embedUrl: '', interactiveUrl: '' };
+
+    // OSM Bbox format is: min longitude, min latitude, max longitude, max latitude
+    const { topLeft, topRight, bottomLeft, bottomRight } = geoAnalysis.boundingBox;
+    
+    // Determine the min/max lat/lon from all four corners to be robust
+    const minLon = Math.min(topLeft.longitude, topRight.longitude, bottomLeft.longitude, bottomRight.longitude);
+    const minLat = Math.min(topLeft.latitude, topRight.latitude, bottomLeft.latitude, bottomRight.latitude);
+    const maxLon = Math.max(topLeft.longitude, topRight.longitude, bottomLeft.longitude, bottomRight.longitude);
+    const maxLat = Math.max(topLeft.latitude, topRight.latitude, bottomLeft.latitude, bottomRight.latitude);
+
+    const bbox = `${minLon},${minLat},${maxLon},${maxLat}`;
+    
+    const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik`;
+    const interactiveUrl = `https://www.openstreetmap.org/?minlon=${minLon}&minlat=${minLat}&maxlon=${maxLon}&maxlat=${maxLat}&box=yes`;
+
+    return { embedUrl, interactiveUrl };
+  };
+
+  const { embedUrl: mapEmbedUrl, interactiveUrl: interactiveMapUrl } = generateMapUrl();
 
   return (
     <>
@@ -99,6 +122,59 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset, wasSampl
             ))}
           </div>
         </ReportSection>
+
+        {fieldMetrics && fieldMetrics.length > 0 && (
+          <ReportSection title="Field-level Analysis">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {fieldMetrics.map((metric, index) => (
+                      <FieldMetricCard key={index} metric={metric} />
+                  ))}
+              </div>
+          </ReportSection>
+        )}
+
+        {geoAnalysis && (
+            <ReportSection title="Geospatial Analysis">
+                <div className="bg-slate-50 p-6 rounded-lg">
+                    <p className="text-slate-600 mb-4">{geoAnalysis.summary}</p>
+                    <p className="text-sm text-slate-500 mb-4">Identified Fields: <code className="bg-slate-200 text-slate-700 p-1 rounded">{geoAnalysis.identifiedLatField}</code> (Lat), <code className="bg-slate-200 text-slate-700 p-1 rounded">{geoAnalysis.identifiedLonField}</code> (Lon)</p>
+                    <div className="w-full border border-slate-200 rounded-lg overflow-hidden shadow-md">
+                        <iframe
+                            width="100%"
+                            height="400"
+                            src={mapEmbedUrl}
+                            className="border-0"
+                            title={`Map showing data points with top-left corner at ${geoAnalysis.boundingBox.topLeft.latitude.toFixed(4)}, ${geoAnalysis.boundingBox.topLeft.longitude.toFixed(4)} and bottom-right corner at ${geoAnalysis.boundingBox.bottomRight.latitude.toFixed(4)}, ${geoAnalysis.boundingBox.bottomRight.longitude.toFixed(4)}`}
+                            aria-label={`Map showing data points with top-left corner at ${geoAnalysis.boundingBox.topLeft.latitude.toFixed(4)}, ${geoAnalysis.boundingBox.topLeft.longitude.toFixed(4)} and bottom-right corner at ${geoAnalysis.boundingBox.bottomRight.latitude.toFixed(4)}, ${geoAnalysis.boundingBox.bottomRight.longitude.toFixed(4)}`}
+                            loading="lazy"
+                        ></iframe>
+                    </div>
+                    <div className="text-right mt-2">
+                        <a href={interactiveMapUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:underline">
+                            View larger map on OpenStreetMap
+                        </a>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                        <div className="p-3 bg-white rounded-lg border border-slate-200">
+                            <h4 className="text-sm font-semibold text-slate-600">Top Left</h4>
+                            <p className="text-xs text-slate-500 mt-1">{geoAnalysis.boundingBox.topLeft.latitude.toFixed(4)}, {geoAnalysis.boundingBox.topLeft.longitude.toFixed(4)}</p>
+                        </div>
+                        <div className="p-3 bg-white rounded-lg border border-slate-200">
+                            <h4 className="text-sm font-semibold text-slate-600">Top Right</h4>
+                            <p className="text-xs text-slate-500 mt-1">{geoAnalysis.boundingBox.topRight.latitude.toFixed(4)}, {geoAnalysis.boundingBox.topRight.longitude.toFixed(4)}</p>
+                        </div>
+                        <div className="p-3 bg-white rounded-lg border border-slate-200">
+                            <h4 className="text-sm font-semibold text-slate-600">Bottom Right</h4>
+                            <p className="text-xs text-slate-500 mt-1">{geoAnalysis.boundingBox.bottomRight.latitude.toFixed(4)}, {geoAnalysis.boundingBox.bottomRight.longitude.toFixed(4)}</p>
+                        </div>
+                        <div className="p-3 bg-white rounded-lg border border-slate-200">
+                            <h4 className="text-sm font-semibold text-slate-600">Bottom Left</h4>
+                            <p className="text-xs text-slate-500 mt-1">{geoAnalysis.boundingBox.bottomLeft.latitude.toFixed(4)}, {geoAnalysis.boundingBox.bottomLeft.longitude.toFixed(4)}</p>
+                        </div>
+                    </div>
+                </div>
+            </ReportSection>
+        )}
 
         <ReportSection title="Visualizations">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">

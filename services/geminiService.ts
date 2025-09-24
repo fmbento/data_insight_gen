@@ -177,6 +177,64 @@ const reportSchema = {
             },
             required: ['summary', 'outliers'],
         },
+        fieldMetrics: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    fieldName: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    stats: {
+                        type: Type.ARRAY,
+                        description: "An array of key-value pairs for statistics.",
+                        items: {
+                           type: Type.OBJECT,
+                           properties: {
+                               key: { type: Type.STRING, description: "The name of the statistic (e.g., 'Min', 'Max')." },
+                               value: { type: Type.STRING, description: "The value of the statistic." },
+                           },
+                           required: ['key', 'value'],
+                        }
+                    },
+                },
+                required: ['fieldName', 'description', 'stats'],
+            },
+        },
+        geoAnalysis: {
+            type: Type.OBJECT,
+            properties: {
+                summary: { type: Type.STRING },
+                identifiedLatField: { type: Type.STRING },
+                identifiedLonField: { type: Type.STRING },
+                boundingBox: {
+                    type: Type.OBJECT,
+                    properties: {
+                        topLeft: {
+                            type: Type.OBJECT,
+                            properties: { latitude: { type: Type.NUMBER }, longitude: { type: Type.NUMBER } },
+                            required: ['latitude', 'longitude'],
+                        },
+                        topRight: {
+                            type: Type.OBJECT,
+                            properties: { latitude: { type: Type.NUMBER }, longitude: { type: Type.NUMBER } },
+                            required: ['latitude', 'longitude'],
+                        },
+                        bottomRight: {
+                            type: Type.OBJECT,
+                            properties: { latitude: { type: Type.NUMBER }, longitude: { type: Type.NUMBER } },
+                            required: ['latitude', 'longitude'],
+                        },
+                        bottomLeft: {
+                            type: Type.OBJECT,
+                            properties: { latitude: { type: Type.NUMBER }, longitude: { type: Type.NUMBER } },
+                            required: ['latitude', 'longitude'],
+                        },
+                    },
+                    required: ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'],
+                },
+            },
+            required: ['summary', 'identifiedLatField', 'identifiedLonField', 'boundingBox'],
+        },
     },
     required: ['title', 'summary', 'keyMetrics', 'charts', 'contentAnalysis', 'interactiveElements'],
 };
@@ -230,12 +288,20 @@ ${outlierAnalysisSection}
 
 **Analysis Tasks to Perform:**
 1.  **Summarize:** Provide a concise, insightful summary of the data.
-2.  **Key Metrics:** Identify and calculate at least 3-5 key metrics (e.g., averages, totals, counts).
-3.  **Charts:** Generate data for 2-3 charts (bar or pie) to visualize key distributions.
-4.  **Content Analysis:** If text fields are present, perform sentiment analysis and identify recurring themes.
-5.  **Interactivity:** Suggest 1-2 interactive elements that could enhance the report.
-6.  **Outlier Analysis:** If requested, perform the outlier detection as described in the 'Outlier and Anomaly Detection' section.
-7.  **Custom Analysis:** If user instructions were provided, address them by creating sections in the 'customSections' array.
+2.  **Key Metrics:** Identify and calculate at least 3-5 high-level key metrics (e.g., averages, totals, counts) for the overall dataset.
+3.  **Field-level Analysis:** For EACH column/field, provide a brief 'description' of what the data represents. For numeric fields, calculate key statistics like 'Min', 'Max', 'Average', and 'Standard Deviation'. For text or categorical fields, you can omit numeric stats or provide stats like 'Unique Values'. Populate your findings into the 'fieldMetrics' array. Each statistic MUST be an object with 'key' and 'value' properties (e.g., { "key": "Min", "value": "10" }).
+4.  **Charts:** Generate data for 2-3 charts (bar or pie) to visualize key distributions.
+5.  **Content Analysis:** If text fields are present, perform sentiment analysis and identify recurring themes.
+6.  **Interactivity:** Suggest 1-2 interactive elements that could enhance the report.
+7.  **Geospatial Analysis:** Scrutinize the data fields to identify any that contain geographic latitude and longitude coordinates. If found:
+    - Identify the names of the latitude and longitude fields.
+    - Calculate the geographic bounding box by determining the minimum and maximum latitude and longitude values.
+    - Construct the four corner points: 'topLeft', 'topRight', 'bottomRight', and 'bottomLeft'.
+    - Provide a 'summary' of the geographic area covered.
+    - Populate all this information into the 'geoAnalysis' object.
+    - If no geographic data is found, you MUST omit the 'geoAnalysis' object entirely from your response.
+8.  **Outlier Analysis:** If requested, perform the outlier detection as described in the 'Outlier and Anomaly Detection' section.
+9.  **Custom Analysis:** If user instructions were provided, address them by creating sections in the 'customSections' array.
     
 **Data to Analyze:**
 \`\`\`
