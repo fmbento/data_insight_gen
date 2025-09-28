@@ -327,3 +327,78 @@ ${dataToAnalyze}
         throw new Error("Received invalid JSON from AI for the report.");
     }
 }
+
+export async function generateNotebookCode(report: AnalysisReport): Promise<{ genericSummary: string; pythonCode: string; }> {
+    const systemInstruction = `You are an expert data scientist creating a Google Colab notebook. Your primary goal is to generate Python code that is dynamic and reusable for datasets with the same structure but different values. Your output must strictly follow the specified format.`;
+
+    // Create a version of the report that only contains structural information, no data values.
+    const reportStructure = {
+        title: report.title,
+        analysis_goal_context: report.summary,
+        key_metrics_to_calculate: report.keyMetrics.map(m => ({ label: m.label, description: m.description })),
+        charts_to_generate: report.charts.map(c => ({ 
+            title: c.title, 
+            type: c.type, 
+            description: `A ${c.type} chart to visualize distributions.`
+        })),
+        fields_in_dataset: report.fieldMetrics?.map(f => f.fieldName)
+    };
+
+    const prompt = `
+Based on the provided analysis context, you will generate two parts: a generic summary and a Python script.
+
+**Analysis Context (for your reference):**
+\`\`\`json
+${JSON.stringify(reportStructure, null, 2)}
+\`\`\`
+
+---
+
+**PART 1: Generic Summary**
+First, write a generic, one-paragraph summary of the analysis goal, based on the 'analysis_goal_context'. This summary will be displayed at the top of the notebook. It MUST NOT contain any specific numbers, record counts, percentages, or calculated values from the original analysis. It should only describe the purpose of the analysis.
+
+---
+
+**PART 2: Python Script**
+Second, after the summary, provide a complete Python script for a Jupyter/Colab notebook.
+
+---
+
+**OUTPUT FORMAT (Strictly Enforced)**
+1.  Start with the generic summary from PART 1.
+2.  Add a separator on a new line: \`###SUMMARY_SEPARATOR###\`
+3.  After the separator, provide ONLY the Python code from PART 2.
+4.  The Python code MUST be structured into logical cells separated by the comment \`#%%\` on its own line.
+
+---
+
+**PYTHON CODE INSTRUCTIONS (CRITICAL)**
+1.  **Imports & Setup:** The first cell must import necessary libraries (\`pandas\`, \`matplotlib.pyplot\`, \`seaborn\`, \`io\`, \`warnings\`, \`google.colab.files\`) and include code to ignore \`FutureWarning\`.
+2.  **Data Upload:** The second cell MUST prompt the user to upload a CSV file using \`google.colab.files\` and load it into a pandas DataFrame named \`df\`.
+3.  **Dynamic Calculations:** All subsequent cells for key metrics and visualizations MUST dynamically calculate values from the \`df\` DataFrame.
+4.  **NO HARDCODED DATA:** You MUST NOT hardcode any data values for charts or metrics. For example, to create a bar chart, use code like \`df['category_column'].value_counts().plot(kind='bar')\`, do not create a chart from a pre-defined list of values. Use the context to infer which columns to use for calculations.
+`;
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            systemInstruction: systemInstruction,
+        },
+    });
+
+    const responseText = response.text.trim();
+    const separator = '###SUMMARY_SEPARATOR###';
+    const separatorIndex = responseText.indexOf(separator);
+
+    if (separatorIndex === -1) {
+        console.warn("Notebook generator did not return the expected separator. Falling back.");
+        // Fallback: use the original summary and treat the whole response as code
+        return { genericSummary: report.summary, pythonCode: responseText };
+    }
+
+    const genericSummary = responseText.substring(0, separatorIndex).trim();
+    const pythonCode = responseText.substring(separatorIndex + separator.length).trim();
+
+    return { genericSummary, pythonCode };
+}

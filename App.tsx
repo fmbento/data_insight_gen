@@ -126,6 +126,7 @@ const App: React.FC = () => {
             onReset={handleReset}
             wasSampleAnalyzed={wasSampleAnalyzed}
             onDownloadSample={handleDownloadSample}
+            rawData={rawData}
           />
         ) : null;
       default:
