@@ -19,7 +19,7 @@ interface ReportDisplayProps {
 }
 
 const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset, wasSampleAnalyzed, onDownloadSample, rawData }) => {
-  const { title, summary, keyMetrics, charts, contentAnalysis, interactiveElements, insightfulQuestions, customSections, outlierAnalysis, fieldMetrics, geoAnalysis } = report;
+  const { title, summary, datasetDescription, sourceUrl, keyMetrics, charts, contentAnalysis, interactiveElements, insightfulQuestions, customSections, outlierAnalysis, fieldMetrics, geoAnalysis } = report;
   const reportRef = useRef<HTMLDivElement>(null);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [isGeneratingNotebook, setIsGeneratingNotebook] = useState(false);
@@ -210,6 +210,22 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onReset, wasSampl
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">{title}</h2>
           <p className="mt-4 max-w-3xl mx-auto text-lg text-slate-600">{summary}</p>
+          {(datasetDescription || sourceUrl) && (
+            <div className="mt-6 max-w-3xl mx-auto text-left bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm">
+              {datasetDescription && (
+                <div className="flex items-start">
+                  <strong className="w-32 flex-shrink-0 text-slate-600">About this data:</strong>
+                  <p className="text-slate-700">{datasetDescription}</p>
+                </div>
+              )}
+              {sourceUrl && (
+                <div className={`flex items-start ${datasetDescription ? 'mt-2' : ''}`}>
+                  <strong className="w-32 flex-shrink-0 text-slate-600">Data Source:</strong>
+                  <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline break-all">{sourceUrl}</a>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         {isAlertVisible && (

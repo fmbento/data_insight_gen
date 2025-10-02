@@ -74,6 +74,8 @@ const reportSchema = {
     properties: {
         title: { type: Type.STRING },
         summary: { type: Type.STRING },
+        datasetDescription: { type: Type.STRING, description: "The user-provided description of the dataset." },
+        sourceUrl: { type: Type.STRING, description: "The user-provided source URL for the dataset." },
         keyMetrics: {
             type: Type.ARRAY,
             items: {
@@ -251,7 +253,7 @@ const reportSchema = {
 };
 
 
-export async function generateReport(data: string, useSample: boolean, customInstructions: string, detectOutliers: boolean): Promise<AnalysisReport> {
+export async function generateReport(data: string, useSample: boolean, customInstructions: string, detectOutliers: boolean, datasetDescription: string, sourceUrl: string): Promise<AnalysisReport> {
     const dataToAnalyze = useSample ? getSampleData(data) : data;
     
     const recordCount = dataToAnalyze.trim().split('\n').filter(line => line.trim() !== '').length - 1;
@@ -259,6 +261,15 @@ export async function generateReport(data: string, useSample: boolean, customIns
     const analysisScope = useSample 
       ? `a representative random sample of ${recordCount} records` 
       : `the full dataset, which contains ${recordCount} records`;
+
+    const datasetContextSection = (datasetDescription.trim() || sourceUrl.trim())
+        ? `
+**User-Provided Dataset Context:**
+This context is provided by the user to help you understand the data's origin and purpose.
+- Dataset Description: ${datasetDescription.trim() || 'Not provided.'}
+- Data Source URL: ${sourceUrl.trim() || 'Not provided.'}
+`
+        : '';
 
     const customInstructionsSection = (customInstructions && customInstructions.trim() !== '') 
         ? `
@@ -290,6 +301,7 @@ You MUST perform an outlier analysis on the full dataset, which contains exactly
     const prompt = `
 Please analyze the data provided below and generate the report.
 
+${datasetContextSection}
 ${customInstructionsSection}
 ${outlierAnalysisSection}
     
@@ -314,6 +326,7 @@ ${outlierAnalysisSection}
     - If no geographic data is found, you MUST omit the 'geoAnalysis' object entirely from your response.
 9.  **Outlier Analysis:** If requested, perform the outlier detection as described in the 'Outlier and Anomaly Detection' section.
 10. **Custom Analysis:** If user instructions were provided, address them by creating sections in the 'customSections' array.
+11. **Populate Context:** If user-provided dataset context is available, populate the 'datasetDescription' and 'sourceUrl' fields in your JSON response with the provided values. If they were not provided, you MUST omit these fields from the JSON.
     
 **Data to Analyze:**
 \`\`\`

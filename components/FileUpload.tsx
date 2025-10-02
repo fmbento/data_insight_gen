@@ -2,13 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { SavedAnalysis } from '../types';
 
 interface FileUploadProps {
-  onSubmit: (data: string) => void;
+  onSubmit: (data: string, description: string, sourceUrl: string) => void;
   onLoadAnalysis: (analysis: SavedAnalysis) => void;
   error: string | null;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({ onSubmit, onLoadAnalysis, error }) => {
   const [data, setData] = useState('');
+  const [description, setDescription] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -138,7 +140,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onSubmit, onLoadAnalysis, error
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (data.trim()) {
-      onSubmit(data);
+      onSubmit(data, description, sourceUrl);
     }
   };
 
@@ -242,7 +244,41 @@ id,name,feedback,rating
             aria-label="Paste your data"
             />
 
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            <div className="mt-6 space-y-4 text-left">
+              <div>
+                  <label htmlFor="dataset-description" className="block text-sm font-medium text-slate-700">
+                      Dataset Description (Optional)
+                  </label>
+                  <div className="mt-1">
+                      <textarea
+                          id="dataset-description"
+                          rows={2}
+                          className="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
+                          placeholder="e.g., 'Customer feedback survey results for Q3 2024.'"
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                      />
+                      <p className="mt-1 text-xs text-slate-500">A brief description can help the AI better understand your data's context.</p>
+                  </div>
+              </div>
+              <div>
+                  <label htmlFor="source-url" className="block text-sm font-medium text-slate-700">
+                      Data Source URL (Optional)
+                  </label>
+                  <div className="mt-1">
+                      <input
+                          type="url"
+                          id="source-url"
+                          className="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
+                          placeholder="https://your-data-source.com/data.csv"
+                          value={sourceUrl}
+                          onChange={(e) => setSourceUrl(e.target.value)}
+                      />
+                  </div>
+              </div>
+            </div>
+
+            {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
             
             <button
             type="submit"

@@ -96,6 +96,8 @@ export interface GeoAnalysis {
 export interface AnalysisReport {
   title: string;
   summary: string;
+  datasetDescription?: string;
+  sourceUrl?: string;
   keyMetrics: Metric[];
   charts: Chart[];
   contentAnalysis: ContentAnalysis;

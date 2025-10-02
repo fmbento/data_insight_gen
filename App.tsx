@@ -10,13 +10,17 @@ import { AppStep } from './types';
 const App: React.FC = () => {
   const [step, setStep] = useState<AppStep>(AppStep.FileUpload);
   const [rawData, setRawData] = useState<string>('');
+  const [datasetDescription, setDatasetDescription] = useState<string>('');
+  const [sourceUrl, setSourceUrl] = useState<string>('');
   const [preliminaryAnalysis, setPreliminaryAnalysis] = useState<PreliminaryAnalysis | null>(null);
   const [analysisReport, setAnalysisReport] = useState<AnalysisReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [wasSampleAnalyzed, setWasSampleAnalyzed] = useState(false);
 
-  const handleDataSubmit = useCallback(async (data: string) => {
+  const handleDataSubmit = useCallback(async (data: string, description: string, url: string) => {
     setRawData(data);
+    setDatasetDescription(description);
+    setSourceUrl(url);
     setError(null);
     setStep(AppStep.Loading);
     try {
@@ -46,7 +50,7 @@ const App: React.FC = () => {
     setStep(AppStep.Loading);
     setWasSampleAnalyzed(useSample);
     try {
-      const report = await generateReport(rawData, useSample, customInstructions, detectOutliers);
+      const report = await generateReport(rawData, useSample, customInstructions, detectOutliers, datasetDescription, sourceUrl);
       setAnalysisReport(report);
       setStep(AppStep.Report);
 
@@ -72,7 +76,7 @@ const App: React.FC = () => {
       setError('Failed to generate the report. The AI model may be overloaded or the data could not be processed.');
       setStep(AppStep.AnalysisOptions);
     }
-  }, [rawData]);
+  }, [rawData, datasetDescription, sourceUrl]);
   
   const handleLoadAnalysis = useCallback((analysis: SavedAnalysis) => {
     setAnalysisReport(analysis.report);
@@ -84,6 +88,8 @@ const App: React.FC = () => {
   const handleReset = () => {
     setStep(AppStep.FileUpload);
     setRawData('');
+    setDatasetDescription('');
+    setSourceUrl('');
     setPreliminaryAnalysis(null);
     setAnalysisReport(null);
     setError(null);
