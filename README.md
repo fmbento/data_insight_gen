@@ -22,10 +22,9 @@ This repo contains everything you need to run this app locally, just add your Go
 ## Example Reports:
 
 <div align="center">
-   <img width="858" height="984" alt="image" src="https://github.com/user-attachments/assets/3099c438-6937-4dd7-819c-4789116daa38" />
-   <img width="849" height="749" alt="image" src="https://github.com/user-attachments/assets/0f593a8c-abb4-40ea-b62c-64adf524c143" />
-   <img width="846" height="1007" alt="image" src="https://github.com/user-attachments/assets/44ec2962-7e3d-4224-9e62-84eb8f799038" />
-   <img width="850" height="628" alt="image" src="https://github.com/user-attachments/assets/a53ff029-5563-469e-9e47-46db89b77e1a" />
+   <img width="909" height="1013" alt="image" src="https://github.com/user-attachments/assets/4cebfdc6-627a-4066-b419-19fe33cd3736" />
+   <img width="905" height="1010" alt="image" src="https://github.com/user-attachments/assets/6daaaa62-89d4-48f3-8cba-e382da3f902a" />
+   <img width="903" height="880" alt="image" src="https://github.com/user-attachments/assets/790bc049-fd4a-4c6e-828f-86716a2984d4" />
 </div>
 <hr><p></p>
 <div align="center">
