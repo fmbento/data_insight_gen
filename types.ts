@@ -45,6 +45,11 @@ export interface InteractiveElement {
   functionality: string;
 }
 
+export interface InsightfulQuestion {
+  question: string;
+  description: string;
+}
+
 export interface CustomSection {
   title: string;
   content: string; // AI can format this with Markdown
@@ -95,6 +100,7 @@ export interface AnalysisReport {
   charts: Chart[];
   contentAnalysis: ContentAnalysis;
   interactiveElements: InteractiveElement[];
+  insightfulQuestions?: InsightfulQuestion[];
   customSections?: CustomSection[];
   outlierAnalysis?: OutlierAnalysis;
   fieldMetrics?: FieldMetric[];

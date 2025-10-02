@@ -139,10 +139,10 @@ const App: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-4xl sm:text-5xl font-bold text-slate-800 tracking-tight">
-            Data Insight <span className="text-indigo-600">Generator</span>
+            Data Sample Insight <span className="text-indigo-600">Generator</span>
           </h1>
           <p className="mt-2 text-lg text-slate-500">
-            Your AI-powered data analysis and visualization partner.
+            Your AI-powered data analysis and visualization preview partner.
           </p>
           <p className="mt-1 text-sm text-slate-400">
             (c) 2025 Filipe MS Bento, <a href="https://www.linkedin.com/in/filipebento" target="_blank" rel="noopener noreferrer" className="underline hover:text-indigo-600">linkedin.com/in/filipebento</a>
