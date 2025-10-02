@@ -1,4 +1,6 @@
 <div align="center">
+   <b>NOTE</b>: if your dataset file has a high number of records (or each record has a lot of fields), then please use this tool, https://github.com/fmbento/Jupyter-Notebooks_ad-hoc-solutions/blob/main/Faz_sample_de_10_50_100_500_ou_1000_registos.ipynb,<br/>to generate a sample file and then use this App to get insights from those sample records<br/>and a Jupyter Notebook to analyse the entire dataset.
+   <p/><br/>
    <img width="887" height="869" alt="image" src="https://github.com/user-attachments/assets/f8490c9a-1355-441f-ac92-777128f32579" />
 </div>
 
