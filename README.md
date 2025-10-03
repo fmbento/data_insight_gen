@@ -33,3 +33,8 @@ This repo contains everything you need to run this app locally, just add your Go
 <img width="866" height="1010" alt="image" src="https://github.com/user-attachments/assets/46df0915-83ba-4205-ba30-3b4a2399a94b" />
 <img width="896" alt="image" src="https://github.com/user-attachments/assets/fda22290-dbc9-4a12-8287-90c64f289135" />
 </div>
+<p/><br/>
+<div align="center">(CC BY-NC-SA 3.0 PT) 2025 Filipe MS Bento, https://linkedin.com/in/filipebento</div>
+
+
+
