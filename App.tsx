@@ -151,7 +151,7 @@ const App: React.FC = () => {
             Your AI-powered data analysis and visualization preview partner.
           </p>
           <p className="mt-1 text-sm text-slate-400">
-            (c) 2025 Filipe MS Bento, <a href="https://www.linkedin.com/in/filipebento" target="_blank" rel="noopener noreferrer" className="underline hover:text-indigo-600">linkedin.com/in/filipebento</a>
+            (CC BY-NC-SA 3.0 PT) 2025 Filipe MS Bento, <a href="https://www.linkedin.com/in/filipebento" target="_blank" rel="noopener noreferrer" className="underline hover:text-indigo-600">linkedin.com/in/filipebento</a>
           </p>
         </header>
         <main className="bg-white rounded-2xl shadow-xl p-4 sm:p-8 transition-all duration-300">
