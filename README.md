@@ -7,7 +7,7 @@
 
 # Run and deploy in Google AI Studio
 
-Open and run this app in your Google AI Studio space: https://ai.studio/apps/drive/1FjP1L0qdoy0gBJfaSFkSqSA3kREzgAyW
+Open and run this app in your [Google AI Studio](https://ai.studio/apps/drive/1FjP1L0qdoy0gBJfaSFkSqSA3kREzgAyW) space.
 
 # Run Locally
 
