@@ -11,7 +11,7 @@ Open and run this app in your [Google AI Studio](https://ai.studio/apps/drive/1F
 
 # Run Locally
 
-This repo contains everything you need to run this app locally, just add your Google Gemini API key (get it from [Google AI Studio](https://aistudio.google.com/).
+This repo contains everything you need to run this app locally, just add your Google Gemini API key (get it from [Google AI Studio](https://aistudio.google.com/)).
 
 **Prerequisites:**  Node.js
 
