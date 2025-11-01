@@ -353,7 +353,23 @@ ${dataToAnalyze}
     }
 }
 
-export async function generateNotebookCode(report: AnalysisReport): Promise<{ genericSummary: string; pythonCode: string; }> {
+async function parseNotebookResponse(responseText: string, fallbackSummary: string): Promise<{ genericSummary: string; pythonCode: string; }> {
+    const separator = '###SUMMARY_SEPARATOR###';
+    const separatorIndex = responseText.indexOf(separator);
+
+    if (separatorIndex === -1) {
+        console.warn("Notebook generator did not return the expected separator. Falling back.");
+        return { genericSummary: fallbackSummary, pythonCode: responseText };
+    }
+
+    const genericSummary = responseText.substring(0, separatorIndex).trim();
+    const pythonCode = responseText.substring(separatorIndex + separator.length).trim();
+
+    return { genericSummary, pythonCode };
+}
+
+
+export async function generateColabNotebookCode(report: AnalysisReport): Promise<{ genericSummary: string; pythonCode: string; }> {
     const systemInstruction = `You are an expert data scientist creating a Google Colab notebook. Your primary goal is to generate Python code that is dynamic and reusable for datasets with the same structure but different values. Your output must strictly follow the specified format.`;
 
     // Create a version of the report that only contains structural information, no data values.
@@ -412,18 +428,66 @@ Second, after the summary, provide a complete Python script for a Jupyter/Colab 
         },
     });
 
-    const responseText = response.text.trim();
-    const separator = '###SUMMARY_SEPARATOR###';
-    const separatorIndex = responseText.indexOf(separator);
+    return parseNotebookResponse(response.text.trim(), report.summary);
+}
 
-    if (separatorIndex === -1) {
-        console.warn("Notebook generator did not return the expected separator. Falling back.");
-        // Fallback: use the original summary and treat the whole response as code
-        return { genericSummary: report.summary, pythonCode: responseText };
-    }
+export async function generateJupyterNotebookCode(report: AnalysisReport): Promise<{ genericSummary: string; pythonCode: string; }> {
+    const systemInstruction = `You are an expert data scientist creating a standard Jupyter notebook. Your primary goal is to generate Python code that is dynamic and reusable for datasets with the same structure but different values. Your output must strictly follow the specified format.`;
 
-    const genericSummary = responseText.substring(0, separatorIndex).trim();
-    const pythonCode = responseText.substring(separatorIndex + separator.length).trim();
+    const reportStructure = {
+        title: report.title,
+        analysis_goal_context: report.summary,
+        key_metrics_to_calculate: report.keyMetrics.map(m => ({ label: m.label, description: m.description })),
+        charts_to_generate: report.charts.map(c => ({ 
+            title: c.title, 
+            type: c.type, 
+            description: `A ${c.type} chart to visualize distributions.`
+        })),
+        fields_in_dataset: report.fieldMetrics?.map(f => f.fieldName)
+    };
 
-    return { genericSummary, pythonCode };
+    const prompt = `
+Based on the provided analysis context, you will generate two parts: a generic summary and a Python script for a standard Jupyter Notebook.
+
+**Analysis Context (for your reference):**
+\`\`\`json
+${JSON.stringify(reportStructure, null, 2)}
+\`\`\`
+
+---
+
+**PART 1: Generic Summary**
+First, write a generic, one-paragraph summary of the analysis goal, based on the 'analysis_goal_context'. This summary MUST NOT contain any specific numbers, record counts, percentages, or calculated values from the original analysis. It should only describe the purpose of the analysis.
+
+---
+
+**PART 2: Python Script for Jupyter Notebook**
+Second, after the summary, provide a complete Python script for a Jupyter notebook.
+
+---
+
+**OUTPUT FORMAT (Strictly Enforced)**
+1.  Start with the generic summary from PART 1.
+2.  Add a separator on a new line: \`###SUMMARY_SEPARATOR###\`
+3.  After the separator, provide ONLY the Python code from PART 2.
+4.  The Python code MUST be structured into logical cells separated by the comment \`#%%\` on its own line. Use \`#%% [markdown]\` for Markdown cells.
+
+---
+
+**PYTHON SCRIPT INSTRUCTIONS (CRITICAL)**
+1.  **Setup Instructions (Markdown):** The very first cell MUST be a Markdown cell, started with \`#%% [markdown]\`. It must explain the setup, list required libraries (\`pandas\`, \`matplotlib\`, \`seaborn\`), and provide the command to install them: \`pip install pandas matplotlib seaborn\`.
+2.  **Imports & Setup:** The second cell must be a code cell that imports necessary libraries (\`pandas\`, \`matplotlib.pyplot\`, \`seaborn\`, \`warnings\`) and includes code to ignore \`FutureWarning\`.
+3.  **Data Loading:** The third cell MUST define a variable \`file_path = 'your_data.csv'\` and instruct the user in a comment to replace 'your_data.csv' with the actual path to their file. Then, it should load the data into a pandas DataFrame named \`df\` using \`pd.read_csv(file_path)\`. DO NOT use any Colab-specific code like \`google.colab.files\`.
+4.  **Dynamic Calculations:** All subsequent cells for key metrics and visualizations MUST dynamically calculate values from the \`df\` DataFrame.
+5.  **NO HARDCODED DATA:** You MUST NOT hardcode any data values for charts or metrics. For example, to create a bar chart, use code like \`df['category_column'].value_counts().plot(kind='bar')\`, do not create a chart from a pre-defined list of values. Use the context to infer which columns to use for calculations.
+`;
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            systemInstruction: systemInstruction,
+        },
+    });
+
+    return parseNotebookResponse(response.text.trim(), report.summary);
 }
